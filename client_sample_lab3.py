@@ -1,3 +1,10 @@
+"""
+Maximilian Puglielli  &&  Hayden Liao
+February 24th, 2020 @ 14:20
+CS-425-A: Introduction to Robotics
+Lab #3: Computer Vision
+"""
+
 import socket
 from time import *
 from pynput import keyboard
@@ -12,16 +19,17 @@ import copy
 socketLock = threading.Lock()
 imageLock = threading.Lock()
 
-IP_ADDRESS = "raspberrypi-1.local"   # SET THIS TO THE RASPBERRY PI's IP ADDRESS
+# SET THIS TO THE RASPBERRY PI's IP ADDRESS
+IP_ADDRESS = "raspberrypi-1.local"
 
-# You should fill this in with your states
 class States(enum.Enum):
 	LISTEN = enum.auto()
 
 class StateMachine(threading.Thread):
 
 	def __init__(self):
-		threading.Thread.__init__(self)   # MUST call this to make sure we setup the thread correctly
+		# NOTE: MUST call this to make sure we setup the thread correctly
+		threading.Thread.__init__(self)
 		# CONFIGURATION PARAMETERS
 		global IP_ADDRESS
 		self.IP_ADDRESS = IP_ADDRESS
@@ -31,10 +39,10 @@ class StateMachine(threading.Thread):
 		self.RUNNING = True
 		self.DIST = False
 		self.video = ImageProc()
-		# Start video
+		# START VIDEO
 		self.video.start()
 
-		# connect to the motorcontroller
+		# CONNECT TO THE MOTORCONTROLLER
 		try:
 			with socketLock:
 				self.sock = socket.create_connection( (self.IP_ADDRESS, self.CONTROLLER_PORT), self.TIMEOUT)
@@ -44,7 +52,7 @@ class StateMachine(threading.Thread):
 			print("ERROR with socket connection", e)
 			sys.exit(0)
 
-		# connect to the robot
+		# CONNECT TO THE ROBOT
 		""" The i command will initialize the robot.  It enters the create into FULL mode which means it can drive off tables and over steps: be careful!"""
 		with socketLock:
 			self.sock.sendall("i /dev/ttyUSB0".encode())
@@ -55,34 +63,36 @@ class StateMachine(threading.Thread):
 				self.RUNNING = False
 
 		self.sensors = Sensing(self.sock)
-		# Start getting data
+		# START READING DATA
 		self.sensors.start()
 
-		# Collect events until released
+		# COLLECT EVENTS UNTIL RELEASED
 		self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
 		self.listener.start()
 
-
+	# BEGINNING OF THE CONTROL LOOP
 	def run(self):
-
-		# BEGINNING OF THE CONTROL LOOP
 		while(self.RUNNING):
 			sleep(0.1)
 			if self.STATE == States.LISTEN:
 				pass
 			# TODO: Work here
 
+	# END OF CONTROL LOOP
 
-		# END OF CONTROL LOOP
-
-		# First stop any other threads talking to the robot
+		# STOP ANY OTHER THREADS TALKING TO THE ROBOT
 		self.sensors.RUNNING = False
 		self.video.RUNNING = False
 
-		sleep(1)    # Wait for threads to wrap up
+		# WAIT FOR THREADS TO FINISH
+		sleep(1)
 
-		# Need to disconnect
-		""" The c command stops the robot and disconnects.  The stop command will also reset the Create's mode to a battery safe PASSIVE.  It is very important to use this command!"""
+		# NEED TO DISCONNECT
+		"""
+		The c command stops the robot and disconnects.
+		The stop command will also reset the Create's mode to a battery safe PASSIVE.
+		It is very important to use this command.
+		"""
 		with socketLock:
 			self.sock.sendall("c".encode())
 			print(self.sock.recv(128))
@@ -91,21 +101,21 @@ class StateMachine(threading.Thread):
 		# If the user didn't request to halt, we should stop listening anyways
 		self.listener.stop()
 
-		#self.sensors.join()
-		#self.video.join()
+#		self.sensors.join()
+#		self.video.join()
 
 	def on_press(self, key):
-		# WARNING: DO NOT attempt to use the socket directly from here
+		# NOTE: DO NOT attempt to use the socket directly from here
 		try:
 			print('alphanumeric key {0} pressed'.format(key.char))
 		except AttributeError:
 			print('special key {0} pressed'.format(key))
 
 	def on_release(self, key):
-		# WARNING: DO NOT attempt to use the socket directly from here
+		# NOTE: DO NOT attempt to use the socket directly from here
 		print('{0} released'.format(key))
 		if key == keyboard.Key.esc or key == keyboard.Key.ctrl:
-			# Stop listener
+			# STOP LISTENER
 			self.RUNNING = False
 			self.sensors.RUNNING = False
 			self.video.RUNNING = False
@@ -116,7 +126,8 @@ class StateMachine(threading.Thread):
 
 class Sensing(threading.Thread):
 	def __init__(self, socket):
-		threading.Thread.__init__(self)   # MUST call this to make sure we setup the thread correctly
+		# NOTE: MUST call this to make sure we setup the thread correctly
+		threading.Thread.__init__(self)
 		self.RUNNING = True
 		self.sock = socket
 
@@ -130,12 +141,13 @@ class Sensing(threading.Thread):
 				self.sock.sendall("a distance".encode())
 				print(self.sock.recv(128))
 
-
 # END OF SENSING
+
 
 class ImageProc(threading.Thread):
 	def __init__(self):
-		threading.Thread.__init__(self)   # MUST call this to make sure we setup the thread correctly
+		# NOTE: MUST call this to make sure we setup the thread correctly
+		threading.Thread.__init__(self)
 		global IP_ADDRESS
 		self.IP_ADDRESS = IP_ADDRESS
 		self.PORT = 8081
@@ -151,7 +163,8 @@ class ImageProc(threading.Thread):
 			sleep(0.1)
 			bytes = b''
 			while self.RUNNING:
-				bytes += stream.read(8192)  #image size is about 40k bytes, so this loops about 5 times
+				# Image size is about 40k bytes, so this loops about 5 times
+				bytes += stream.read(8192)
 				a = bytes.find(b'\xff\xd8')
 				b = bytes.find(b'\xff\xd9')
 				if a>b:
@@ -159,19 +172,21 @@ class ImageProc(threading.Thread):
 					continue
 				if a!=-1 and b!=-1:
 					jpg = bytes[a:b+2]
-					#bytes= bytes[b+2:]
-					#print("found image", a, b, len(bytes))
+#					bytes = bytes[b+2:]
+#					print("found image", a, b, len(bytes))
 					break
 			img = cv2.imdecode(numpy.fromstring(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
 			# Resize to half size so that image processing is faster
 			img = cv2.resize(img, ((int)(len(img[0])/2),(int)(len(img)/2)))
 
 			with imageLock:
-				self.latestImg = copy.deepcopy(img) # Make a copy not a reference
+				# Make a copy not a reference
+				self.latestImg = copy.deepcopy(img)
 
-			self.doImgProc(img) #pass by reference for all non-primitve types in Python
+			# Pass by reference for all non-primitve types in Python
+			self.doImgProc(img)
 
-			# after image processing you can update here to see the new version
+			# After image processing you can update here to see the new version
 			with imageLock:
 				self.feedback = copy.deepcopy(img)
 
@@ -188,10 +203,7 @@ class ImageProc(threading.Thread):
 					imgToModify[y,x][2] = 255
 					imgToModify[y,x][0] = 0
 					imgToModify[y,x][1] = 0
-
 		# TODO: Work here
-
-
 
 # END OF IMAGEPROC
 
@@ -226,5 +238,4 @@ if __name__ == "__main__":
 
 	sleep(1)
 
-	#sm.join()
-
+#	sm.join()
