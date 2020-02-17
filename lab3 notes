@@ -1,0 +1,34 @@
+Section 2—Non-lab specific notes
+
+RASPBERRY PI's IP ADDRESS: 192.168.1.103
+
+Documentation: https://bitbucket.org/lemoneer/irobot
+
+connecting to R-Pi
+
+  ssh pi@192.168.1.103
+
+  usr: pi
+
+  pwd: create
+
+Location of Hayden’s python executable (Scripts folder): C:\Users\liaoh\AppData\Local\Programs\Python\Python38\python.exe
+
+
+
+Section 3—Kind Reminders
+
+Don't put a sleep in the socketlock
+
+Sleep between sensory readings to avoid inaccurate and abnormally high data
+
+
+
+
+
+################################################
+On the Windows: Install MSVC build tools:
+https://visualstudio.microsoft.com/downloads/#build-tools-for-visualstudio-
+2019
+Then on the command line navigate to the Scripts folder in your python3 installation:
+pip3 install opencv-python
