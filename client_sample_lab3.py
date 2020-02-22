@@ -20,7 +20,7 @@ socketLock = threading.Lock()
 imageLock = threading.Lock()
 
 # SET THIS TO THE RASPBERRY PI's IP ADDRESS
-IP_ADDRESS = "raspberrypi-1.local"
+IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
 	LISTEN = enum.auto()
