@@ -160,7 +160,7 @@ class ImageProc(threading.Thread):
         url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
         stream = urllib.request.urlopen(url)
         while(self.RUNNING):
-            sleep(0.1)
+            # sleep(0.5)
             bytes = b''
             while self.RUNNING:
                 # Image size is about 40k bytes, so this loops about 5 times
@@ -177,7 +177,7 @@ class ImageProc(threading.Thread):
                     break
             img = cv2.imdecode(numpy.fromstring(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
             # Resize to half size so that image processing is faster
-            img = cv2.resize(img, ((int)(len(img[0])/2),(int)(len(img)/2)))
+            img = cv2.resize(img, ((int)(len(img[0])/4),(int)(len(img)/4)))
 
             with imageLock:
                 # Make a copy not a reference
@@ -194,8 +194,8 @@ class ImageProc(threading.Thread):
         self.thresholds[name] = value
 
     def doImgProc(self, imgToModify):
-        pixel = self.latestImg[120,160]
-        print("pixel (160, 120) is ",pixel, "in B,G,R order.")
+        # pixel = self.latestImg[120,160]
+        # print("pixel (160, 120) is ",pixel, "in B,G,R order.")
         hsv_img = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2HSV)
 
         for y in range(len(self.latestImg)):
@@ -225,6 +225,9 @@ if __name__ == "__main__":
     cv2.namedWindow('sliders')
     cv2.moveWindow('sliders', 680, 21)
 
+    cv2.namedWindow('Create View2')
+    cv2.moveWindow('Create View2', 500, 21)
+
     sm = StateMachine()
     sm.start()
 
@@ -249,7 +252,7 @@ if __name__ == "__main__":
     while(sm.RUNNING):
         with imageLock:
             cv2.imshow("Create View",sm.video.latestImg)
-            cv2.imshow("sliders",sm.video.feedback)
+            cv2.imshow("Create View2",sm.video.feedback)
         cv2.waitKey(5)
 
     cv2.destroyAllWindows()
