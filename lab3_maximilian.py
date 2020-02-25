@@ -228,7 +228,6 @@ class ImageProc(threading.Thread):
 
 
 if __name__ == "__main__":
-
 	cv2.namedWindow("Create View", flags=cv2.WINDOW_AUTOSIZE)
 	cv2.moveWindow("Create View", 21, 21)
 
