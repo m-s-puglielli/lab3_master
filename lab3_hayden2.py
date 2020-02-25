@@ -209,25 +209,14 @@ class ImageProc(threading.Thread):
 
         for y in range(len(hsv_img)):
             for x in range(len(hsv_img[0])):
-                if hsv_img[y,x][0] >= self.thresholds['low_hue'] and hsv_img[y,x][0] <= self.thresholds['high_hue']:
-                    # imgToModify[y,x][0] = 255
-                    # imgToModify[y,x][1] = 0
-                    # imgToModify[y,x][2] = 0
-                    correct_hue = True
-                if hsv_img[y,x][1] >= self.thresholds['low_saturation'] and hsv_img[y,x][1] <= self.thresholds['high_saturation']:
-                    # imgToModify[y,x][0] = 0
-                    # imgToModify[y,x][1] = 255
-                    # imgToModify[y,x][2] = 0
-                    correct_saturation = True
-                if hsv_img[y,x][2] >= self.thresholds['low_value'] and hsv_img[y,x][2] <= self.thresholds['high_value']:
-                    # imgToModify[y,x][0] = 0
-                    # imgToModify[y,x][1] = 0
-                    # imgToModify[y,x][2] = 255
-                    correct_value = True
-                if correct_hue and correct_saturation and correct_value:
+
+                if hsv_img[y,x][0] >= self.thresholds['low_hue'] and hsv_img[y,x][0] <= self.thresholds['high_hue'] and\
+                hsv_img[y,x][1] >= self.thresholds['low_saturation'] and hsv_img[y,x][1] <= self.thresholds['high_saturation'] and\
+                hsv_img[y,x][2] >= self.thresholds['low_value'] and hsv_img[y,x][2] <= self.thresholds['high_value']:
                     imgToModify[y,x][2] = 255
                     imgToModify[y,x][1] = 0
                     imgToModify[y,x][0] = 0
+
 
 # END OF IMAGEPROC
 
@@ -247,16 +236,12 @@ if __name__ == "__main__":
     sm.start()
 
     # Probably safer to do this on the main thread rather than in ImgProc init
-    cv2.createTrackbar('low_value', 'sliders', sm.video.thresholds['low_value'], 255,
-                      lambda x: sm.video.setThresh('low_value', x) )
-    cv2.createTrackbar('high_value', 'sliders', sm.video.thresholds['high_value'], 255,
-                     lambda x: sm.video.setThresh('high_value', x) )
+    cv2.createTrackbar('low_hue', 'sliders', sm.video.thresholds['low_hue'], 179, lambda x: sm.video.setThresh('low_hue', x) )
+    cv2.createTrackbar('high_hue', 'sliders', sm.video.thresholds['high_hue'], 179, lambda x: sm.video.setThresh('high_hue', x) )
     cv2.createTrackbar('low_saturation', 'sliders', sm.video.thresholds['low_saturation'], 255, lambda x: sm.video.setThresh('low_saturation', x) )
     cv2.createTrackbar('high_saturation', 'sliders', sm.video.thresholds['high_saturation'], 255, lambda x: sm.video.setThresh('high_saturation', x) )
-    cv2.createTrackbar('low_hue', 'sliders', sm.video.thresholds['low_hue'], 255,
-                      lambda x: sm.video.setThresh('low_hue', x) )
-    cv2.createTrackbar('high_hue', 'sliders', sm.video.thresholds['high_hue'], 255,
-                     lambda x: sm.video.setThresh('high_hue', x) )
+    cv2.createTrackbar('low_value', 'sliders', sm.video.thresholds['low_value'], 255, lambda x: sm.video.setThresh('low_value', x) )
+    cv2.createTrackbar('high_value', 'sliders', sm.video.thresholds['high_value'], 255, lambda x: sm.video.setThresh('high_value', x) )
 
 
     while len(sm.video.latestImg) == 0:
