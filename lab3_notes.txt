@@ -24,6 +24,16 @@ Sleep between sensory readings to avoid inaccurate and abnormally high data
 
 
 
+RED CONE:
+      5 <= hue        <=  15
+    200 <= saturation <= 250
+     60 <= value      <= 180
+
+TENNIS BALL:
+     25 <= hue        <=  35
+    100 <= saturation <= 235
+    125 <= value      <= 230
+
 
 
 ################################################

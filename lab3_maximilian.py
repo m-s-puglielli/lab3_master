@@ -154,9 +154,9 @@ class ImageProc(threading.Thread):
 		self.RUNNING = True
 		self.latestImg = []
 		self.feedback = []
-		self.thresholds = {'low_hue':       0, 'high_hue':        0,\
-						   'low_saturation':0, 'high_saturation': 0,\
-						   'low_value':     0, 'high_value':      0}
+		self.thresholds = {'low_hue':         25, 'high_hue':         35,\
+						   'low_saturation': 100, 'high_saturation': 235,\
+						   'low_value':      125, 'high_value':      230}
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -204,7 +204,7 @@ class ImageProc(threading.Thread):
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
-				if self.thresholds['low_hue']        <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'] and\
+				if self.thresholds['low_hue']        <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue']        and\
 				   self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
 				   self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
 					imgToModify[y][x][0] = 0
