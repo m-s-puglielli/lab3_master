@@ -12,7 +12,8 @@ connecting to R-Pi
 
   pwd: create
 
-Location of Hayden’s python executable (Scripts folder): C:\Users\liaoh\AppData\Local\Programs\Python\Python38\python.exe
+Location of Hayden’s python executable (Scripts folder):
+    C:\Users\liaoh\AppData\Local\Programs\Python\Python38\python.exe
 
 
 
@@ -40,8 +41,3 @@ HSV for red cone:
   H: 38.1/2     = 19.05
   S: 96.7*2.55  = 246.585
   V: 84.3*2.55  = 214.965
-
-
-
-
-  

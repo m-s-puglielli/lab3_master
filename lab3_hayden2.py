@@ -154,7 +154,7 @@ class ImageProc(threading.Thread):
         self.RUNNING = True
         self.latestImg = []
         self.feedback = []
-        self.thresholds = {'low_hue':-11, 'high_hue':49, 'low_saturation':217, 'high_saturation':255, 'low_value':185, 'high_value':245}
+        self.thresholds = {'low_hue':15, 'high_hue':55, 'low_saturation':71, 'high_saturation':111, 'low_value':148, 'high_value':188}
 
     def run(self):
         url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -178,6 +178,9 @@ class ImageProc(threading.Thread):
             img = cv2.imdecode(numpy.fromstring(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
             # Resize to half size so that image processing is faster
             img = cv2.resize(img, ((int)(len(img[0])/4),(int)(len(img)/4)))
+            # print("##########################")
+            # print("image is size: %d by %d\n" % (((int)(len(img[0])/4)), ((int)(len(img[0])/4))))
+
 
             with imageLock:
                 # Make a copy not a reference
@@ -201,8 +204,8 @@ class ImageProc(threading.Thread):
         correct_saturation = False
         correct_value = False
 
-        pixel = hsv_img[0,0]
-        print("pixel (0, 0) is ",pixel, "in H,S,V order.")
+        pixel = hsv_img[20,20]
+        print("pixel (20, 20) is ",pixel, "in H,S,V order.")
 
         for y in range(len(hsv_img)):
             for x in range(len(hsv_img[0])):
