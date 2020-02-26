@@ -23,13 +23,17 @@ imageLock = threading.Lock()
 IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
-	LISTEN = enum.auto()
+	SEARCH    = enum.auto()
+	S_LEFT    = enum.auto()
+	S_RIGHT   = enum.auto()
+	M_FORWARD = enum.auto()
 
 class StateMachine(threading.Thread):
 
 	def __init__(self):
 		# NOTE: MUST call this to make sure we setup the thread correctly
 		threading.Thread.__init__(self)
+
 		# CONFIGURATION PARAMETERS
 		global IP_ADDRESS
 		self.IP_ADDRESS = IP_ADDRESS
@@ -39,6 +43,7 @@ class StateMachine(threading.Thread):
 		self.RUNNING = True
 		self.DIST = False
 		self.video = ImageProc()
+
 		# START VIDEO
 		self.video.start()
 
@@ -73,10 +78,16 @@ class StateMachine(threading.Thread):
 	# BEGINNING OF THE CONTROL LOOP
 	def run(self):
 		while(self.RUNNING):
-			sleep(0.1)
-			if self.STATE == States.LISTEN:
+			if   self.STATE == States.SEARCH:
 				pass
-			# TODO: Work here
+			elif self.STATE == States.S_LEFT:
+				pass
+			elif self.STATE == States.S_RIGHT:
+				pass
+			elif self.STATE == States.M_FORWARD:
+				pass
+			else:
+				print("ERROR: self.STATE is corrupted")
 
 	# END OF CONTROL LOOP
 
@@ -114,7 +125,8 @@ class StateMachine(threading.Thread):
 	def on_release(self, key):
 		# NOTE: DO NOT attempt to use the socket directly from here
 		print('{0} released'.format(key))
-		if key == keyboard.Key.esc or key == keyboard.Key.ctrl:
+		if	key == keyboard.Key.esc or\
+			key == keyboard.Key.ctrl:
 			# STOP LISTENER
 			self.RUNNING = False
 			self.sensors.RUNNING = False
@@ -169,10 +181,10 @@ class ImageProc(threading.Thread):
 				bytes += stream.read(8192)
 				a = bytes.find(b'\xff\xd8')
 				b = bytes.find(b'\xff\xd9')
-				if a>b:
+				if a > b:
 					bytes = bytes[b+2:]
 					continue
-				if a!=-1 and b!=-1:
+				if a != -1 and b != -1:
 					jpg = bytes[a:b+2]
 #                    bytes = bytes[b+2:]
 #                    print("found image", a, b, len(bytes))
@@ -228,7 +240,6 @@ class ImageProc(threading.Thread):
 
 
 if __name__ == "__main__":
-
 	cv2.namedWindow("Create View", flags=cv2.WINDOW_AUTOSIZE)
 	cv2.moveWindow("Create View", 21, 21)
 
