@@ -145,6 +145,7 @@ class Sensing(threading.Thread):
 
 
 class ImageProc(threading.Thread):
+
 	def __init__(self):
 		# NOTE: MUST call this to make sure we setup the thread correctly
 		threading.Thread.__init__(self)
