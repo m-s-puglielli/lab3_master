@@ -24,6 +24,11 @@ IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
 	LISTEN = enum.auto()
+	SEARCH = enum.auto()
+	STRAFE_RIGHT = enum.auto()
+	STRAFE_LEFT = enum.auto()
+	DRIVE FORWARD = enum.auto()
+
 
 class StateMachine(threading.Thread):
 
@@ -74,9 +79,70 @@ class StateMachine(threading.Thread):
 	def run(self):
 		while(self.RUNNING):
 			sleep(0.1)
-			if self.STATE == States.LISTEN:
+			if self.STATE == States.SEARCH:
+				
+			if self.STATE == States.FORWARD:
 				pass
-			# TODO: Work here
+			if self.STATE == States.STRAFE_LEFT:
+				pass
+			if self.STATE == States.STRAFE_RIGHT:
+				pass
+##########################################################
+		# while(self.RUNNING):
+            # sleep(0.1)
+            # if self.STATE == States.LISTEN:
+            #     print("STATE: LISTEN")
+            #     # pass
+            #     self.STATE = States.ON_LINE
+            # if self.STATE == States.ON_LINE:
+            #     # print("STATE: ON_LINE")
+
+            #     # print(drive_forward(50))
+            #     # ALT: print(self.drive_forward(50))
+
+            #     with socketLock:
+            #         self.sock.sendall("a drive_straight(50)".encode())
+            #         discard = self.sock.recv(128).decode()
+
+            #     # drive forward
+            #     # with socketLock:
+            #     #     self.sock.sendall("a drive_straight(50)".encode())
+            #     #     print(self.sock.recv(128).decode())
+            #     sleep(.05)
+
+            #     # if line sensed on left
+            #     if self.sensors.left_sensor < 700: #seen black tape
+            #         print("LEFT")
+            #         self.STATE = States.CORRECTING_LEFT
+
+            #     #if line sensed on right
+            #     if self.sensors.right_sensor < 1400:
+            #         print("RIGHT")
+            #         self.STATE = States.CORRECTING_RIGHT
+            # if self.STATE == States.CORRECTING_LEFT:
+            #     # spin left
+            #     with socketLock:
+            #         self.sock.sendall("a spin_left(75)".encode())
+            #         discard = self.sock.recv(128).decode()
+            #     sleep(0.05)
+
+            #     # # then turn off and close connection
+            #     # self.sock.sendall("c".  encode())
+            #     # print(self.sock.recv(128).decode())
+            #     #
+            #     # self.sock.close()
+
+            #     self.STATE = States.ON_LINE
+
+            # if self.STATE == States.CORRECTING_RIGHT:
+            #     # spin right
+            #     with socketLock:
+            #         self.sock.sendall("a spin_right(75)".encode())
+            #         discard = self.sock.recv(128).decode()
+            #     sleep(0.05)
+
+            #     self.STATE = States.ON_LINE
+#########################################################3
 
 	# END OF CONTROL LOOP
 
@@ -224,7 +290,6 @@ class ImageProc(threading.Thread):
 #					imgToModify[y,x][0] = 0
 #					imgToModify[y,x][1] = 0
 #					imgToModify[y,x][2] = 255
-		# TODO: Work here
 
 # END OF IMAGEPROC
 
