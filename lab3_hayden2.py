@@ -27,7 +27,7 @@ class States(enum.Enum):
 	SEARCH = enum.auto()
 	STRAFE_RIGHT = enum.auto()
 	STRAFE_LEFT = enum.auto()
-	DRIVE FORWARD = enum.auto()
+	FORWARD = enum.auto()
 
 
 class StateMachine(threading.Thread):
@@ -40,7 +40,7 @@ class StateMachine(threading.Thread):
 		self.IP_ADDRESS = IP_ADDRESS
 		self.CONTROLLER_PORT = 5001
 		self.TIMEOUT = 10   # If its unable to connect after 10 seconds, give up.  Want this to be a while so robot can init.
-		self.STATE = States.LISTEN
+		self.STATE = States.SEARCH
 		self.RUNNING = True
 		self.DIST = False
 		self.video = ImageProc()
@@ -79,50 +79,73 @@ class StateMachine(threading.Thread):
 	def run(self):
 		while(self.RUNNING):
 			sleep(0.1)
+			if self.STATE == States.LISTEN: 
+				pass
 			if self.STATE == States.SEARCH:
+				# ball_found = False
+				for i in range(10): 
+					i = i+1
+					pass
+					#turn left a bit
+					#scan 
+					#if ball found 
+						# ball_found = true 
+						# break 
+				#beep because ball not found 
+				#_____Running = false;
 				
 			if self.STATE == States.FORWARD:
-				pass
+				print("State: FORWARD")
+				with socketLock:
+					self.sock.sendall("a drive_straight(50)".encode())
+					discard = self.sock.recv(128).decode()
+				sleep(0.2)
+				#if ball is to the left 
+					# self.STATE = States.STRAFE_LEFT
+				# else if ball is to the right 
+					# self.STATE = States.STRAFE_RIGHT
+				# if no ball
+					# self.STATE = States.SEARCH
 			if self.STATE == States.STRAFE_LEFT:
 				pass
 			if self.STATE == States.STRAFE_RIGHT:
 				pass
 ##########################################################
 		# while(self.RUNNING):
-            # sleep(0.1)
-            # if self.STATE == States.LISTEN:
-            #     print("STATE: LISTEN")
-            #     # pass
-            #     self.STATE = States.ON_LINE
-            # if self.STATE == States.ON_LINE:
-            #     # print("STATE: ON_LINE")
+        #     sleep(0.1)
+        #     if self.STATE == States.LISTEN:
+        #         print("STATE: LISTEN")
+        #         # pass
+        #         self.STATE = States.ON_LINE
+        #     if self.STATE == States.ON_LINE:
+        #         # print("STATE: ON_LINE")
 
-            #     # print(drive_forward(50))
-            #     # ALT: print(self.drive_forward(50))
+        #         # print(drive_forward(50))
+        #         # ALT: print(self.drive_forward(50))
 
-            #     with socketLock:
-            #         self.sock.sendall("a drive_straight(50)".encode())
-            #         discard = self.sock.recv(128).decode()
+        #         with socketLock:
+        #             self.sock.sendall("a drive_straight(50)".encode())
+        #             discard = self.sock.recv(128).decode()
 
-            #     # drive forward
-            #     # with socketLock:
-            #     #     self.sock.sendall("a drive_straight(50)".encode())
-            #     #     print(self.sock.recv(128).decode())
-            #     sleep(.05)
+        #         # drive forward
+        #         # with socketLock:
+        #         #     self.sock.sendall("a drive_straight(50)".encode())
+        #         #     print(self.sock.recv(128).decode())
+        #         sleep(.05)
 
-            #     # if line sensed on left
-            #     if self.sensors.left_sensor < 700: #seen black tape
-            #         print("LEFT")
-            #         self.STATE = States.CORRECTING_LEFT
+        #         # if line sensed on left
+        #         if self.sensors.left_sensor < 700: #seen black tape
+        #             print("LEFT")
+        #             self.STATE = States.CORRECTING_LEFT
 
-            #     #if line sensed on right
-            #     if self.sensors.right_sensor < 1400:
-            #         print("RIGHT")
-            #         self.STATE = States.CORRECTING_RIGHT
-            # if self.STATE == States.CORRECTING_LEFT:
-            #     # spin left
-            #     with socketLock:
-            #         self.sock.sendall("a spin_left(75)".encode())
+        #         #if line sensed on right
+        #         if self.sensors.right_sensor < 1400:
+        #             print("RIGHT")
+        #             self.STATE = States.CORRECTING_RIGHT
+        #     if self.STATE == States.CORRECTING_LEFT:
+        #         # spin left
+        #         with socketLock:
+        #             self.sock.sendall("a spin_left(75)".encode())
             #         discard = self.sock.recv(128).decode()
             #     sleep(0.05)
 
@@ -142,7 +165,7 @@ class StateMachine(threading.Thread):
             #     sleep(0.05)
 
             #     self.STATE = States.ON_LINE
-#########################################################3
+#########################################################
 
 	# END OF CONTROL LOOP
 
@@ -272,24 +295,58 @@ class ImageProc(threading.Thread):
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
+				#cone detection
 				if self.thresholds['low_hue']        <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'] and\
 				   self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
 				   self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
+					imgToModify[y][x][0] = 255
+					imgToModify[y][x][1] = 255
+					imgToModify[y][x][2] = 255
+				elif self.thresholds['low_hue'] >= self.thresholds['high_hue']:
+					print("pixel[%d][%d]: low_hue > high_hue" % (x, y))
+					if self.thresholds['low_hue'] >= hsv_img[y][x][0] or hsv_img[y][x][0] >= self.thresholds['high_hue']: 
+						imgToModify[y][x][0] = 255
+						imgToModify[y][x][1] = 255
+						imgToModify[y][x][2] = 255
+				else:
 					imgToModify[y][x][0] = 0
 					imgToModify[y][x][1] = 0
-					imgToModify[y][x][2] = 255
-#				if self.thresholds['low_blue'] <= self.latestImg[y,x][0] and self.latestImg[y,x][0] <= self.thresholds['high_blue']:
-#					imgToModify[y,x][0] = 255
-#					imgToModify[y,x][1] = 0
-#					imgToModify[y,x][2] = 0
-#				if self.thresholds['low_green'] <= self.latestImg[y,x][1] and self.latestImg[y,x][1] <= self.thresholds['high_green']:
-#					imgToModify[y,x][0] = 0
-#					imgToModify[y,x][1] = 255
-#					imgToModify[y,x][2] = 0
-#				if self.thresholds['low_red'] <= self.latestImg[y,x][2] and self.latestImg[y,x][2] <= self.thresholds['high_red']:
-#					imgToModify[y,x][0] = 0
-#					imgToModify[y,x][1] = 0
-#					imgToModify[y,x][2] = 255
+					imgToModify[y][x][2] = 0
+		
+				
+	#if a pixel is not interesting, make all surrounding pixels no interesting
+	#white, (255,255,255) is interesting, black is not 
+	def erode(self, imgToModify): 
+		for y in range(1, len(imgToModify)-1): 
+			for x in range(1, len(imgToModify)-1):
+				if imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0: 
+					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
+					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
+					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
+					imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0
+					imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0
+					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
+					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
+					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
+		return imgToModify
+					
+		def dilate(self, imgToModify): 
+			for y in range(1, len(imgToModify)-1): 
+				for x in range(1, len(imgToModify)-1):
+					if imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255: 
+						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
+						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
+						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
+						imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255
+						imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255
+						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
+						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
+						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
+			return imgToModify
+					
+
+		
+
 
 # END OF IMAGEPROC
 
