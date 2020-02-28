@@ -2,7 +2,7 @@
 Hayden Liao  &&  Maximilian Puglielli
 February 24th, 2020 @ 14:20
 CS-425-A: Introduction to Robotics
-Lab #3: Computer Vision
+Lab #3: Computer Vision & General Suffering
 """
 
 import socket
@@ -59,7 +59,7 @@ class StateMachine(threading.Thread):
 			sys.exit(0)
 
 		# CONNECT TO THE ROBOT
-		""" The i command will initialize the robot.  It enters the create into FULL mode which means it can drive off tables and over steps: be careful!"""
+		# The i command will initialize the robot.  It enters the create into FULL mode which means it can drive off tables and over steps: be careful!
 		with socketLock:
 			self.sock.sendall("i /dev/ttyUSB0".encode())
 			print("Sent command")
@@ -252,8 +252,8 @@ class ImageProc(threading.Thread):
 	def setThresh(self, name, value):
 		self.thresholds[name] = value
 
-	#if a pixel is not interesting, make all surrounding pixels not interesting
-	#white, (255,255,255) is "interesting", black is not
+	# if a pixel is not interesting, make all surrounding pixels not interesting
+	# white, (255,255,255) is "interesting", black is not
 	def erode(self, original, scale):
 		imgToModify = original
 
@@ -289,8 +289,8 @@ class ImageProc(threading.Thread):
 		self.feedback_filtered = imgToModify
 
 
-	#if a pixel is interesting, make all surrounding pixels interesting
-	#white, (255,255,255) is "interesting", black is not
+	# if a pixel is interesting, make all surrounding pixels interesting
+	# white, (255,255,255) is "interesting", black is not
 	def dilate(self, original, scale):
 		imgToModify = original
 
@@ -334,7 +334,20 @@ class ImageProc(threading.Thread):
 #		print("pixel (160, 120) is ",pixel, "in B,G,R order.")
 
 		hsv_img = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2HSV)
-		pixel = hsv_img[20][20]
+
+		# CIRCLE TRACKING
+		gray = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2GRAY)
+		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
+
+		if circles is not None:
+			circles = np.round(circles[0, :]).astype("int")
+
+			for (x, y, r) in circles:
+				cv2.circle(output, (x, y), r, (0, 255, 0), 4)
+				cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+
+			cv2.imshow("output", np.hstack([image, output]))
+			cv2.waitKey(0)
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
