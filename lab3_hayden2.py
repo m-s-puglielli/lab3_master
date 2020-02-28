@@ -244,10 +244,16 @@ class ImageProc(threading.Thread):
 		self.RUNNING = True
 		self.latestImg = []
 		self.feedback = []
-		self.thresholds = {'low_hue':        5, 'high_hue':          23,\
-						   'low_saturation': 147, 'high_saturation': 255,\
-						   'low_value':      89, 'high_value':       224}
-
+		self.feedback_filtered = []
+		# self.thresholds = {'low_hue':        5, 'high_hue':          23,\
+		# 				   'low_saturation': 147, 'high_saturation': 255,\
+		# 				   'low_value':      89, 'high_value':       224}
+		# self.thresholds = {'low_hue':        150, 'high_hue':          23,
+        #              'low_saturation': 210, 'high_saturation': 244,
+        #              'low_value':      194, 'high_value':       221}
+		self.thresholds = {'low_hue':       144, 'high_hue':          9,
+							'low_saturation': 0, 'high_saturation': 255,
+							'low_value':      114, 'high_value':       227}
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -278,14 +284,53 @@ class ImageProc(threading.Thread):
 
 			# Pass by reference for all non-primitve types in Python
 			self.doImgProc(img)
-
+			
 			# After image processing you can update here to see the new version
 			with imageLock:
 				self.feedback = copy.deepcopy(img)
 
+			#erode the processed image 
+			self.erode(img)
+
+			# after eroding the image you can see the update in feedback_filtered
+			with imageLock: 
+				self.feedback_filtered = copy.deepcopy(img)
+			
+
 	def setThresh(self, name, value):
 		self.thresholds[name] = value
 
+	#if a pixel is not interesting, make all surrounding pixels not interesting
+	#white, (255,255,255) is "interesting", black is not
+	def erode(self, original):
+		imgToModify = original
+		
+		for y in range(1, len(original)-1, 3):
+			for x in range(1, len(original)-1, 3):
+				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+					for i in range(3):
+						imgToModify[y-1][x-1][i] = 0
+						imgToModify[y][x-1][i] = 0
+						imgToModify[y][x+1][i] = 0
+						imgToModify[y+1][x+1][i] = 0
+		self.feedback_filtered = imgToModify
+
+	#if a pixel is interesting, make all surrounding pixels interesting
+	#white, (255,255,255) is "interesting", black is not
+	def dilate(self, original):
+		imgToModify = original
+		
+		for y in range(1, len(original)-1, 3):
+			for x in range(1, len(original)-1, 3):
+				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+					for i in range(3):
+						imgToModify[y-1][x-1][i] = 255
+						imgToModify[y][x-1][i] = 255
+						imgToModify[y][x+1][i] = 255
+						imgToModify[y+1][x+1][i] = 255
+		self.feedback_filtered = imgToModify
+
+	
 	def doImgProc(self, imgToModify):
 #		pixel = self.latestImg[120,160]
 #		print("pixel (160, 120) is ",pixel, "in B,G,R order.")
@@ -296,71 +341,34 @@ class ImageProc(threading.Thread):
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
 				#cone detection
-				if self.thresholds['low_hue']        <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'] and\
-				   self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
-				   self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
-					imgToModify[y][x][0] = 255
-					imgToModify[y][x][1] = 255
-					imgToModify[y][x][2] = 255
-				elif self.thresholds['low_hue'] >= self.thresholds['high_hue']:
-					print("pixel[%d][%d]: low_hue > high_hue" % (x, y))
-					if self.thresholds['low_hue'] >= hsv_img[y][x][0] or hsv_img[y][x][0] >= self.thresholds['high_hue']: 
+				if ((self.thresholds['low_hue'] <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue']) or\
+					((self.thresholds['low_hue'] >= self.thresholds['high_hue']) and (hsv_img[y][x][0] >= self.thresholds['low_hue'] or hsv_img[y][x][0] <= self.thresholds['high_hue']))) and\
+					self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
+					self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
 						imgToModify[y][x][0] = 255
 						imgToModify[y][x][1] = 255
-						imgToModify[y][x][2] = 255
+						imgToModify[y][x][2] = 255			
 				else:
 					imgToModify[y][x][0] = 0
 					imgToModify[y][x][1] = 0
 					imgToModify[y][x][2] = 0
-		
-				
-	#if a pixel is not interesting, make all surrounding pixels no interesting
-	#white, (255,255,255) is interesting, black is not 
-	def erode(self, imgToModify): 
-		for y in range(1, len(imgToModify)-1): 
-			for x in range(1, len(imgToModify)-1):
-				if imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0: 
-					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
-					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
-					imgToModify[y-1][x][0] == 0 and imgToModify[y-1][x][1] == 0 and imgToModify[y-1][x][2] == 0
-					imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0
-					imgToModify[y][x][0] == 0 and imgToModify[y][x][1] == 0 and imgToModify[y][x][2] == 0
-					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
-					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
-					imgToModify[y+1][x][0] == 0 and imgToModify[y+1][x][1] == 0 and imgToModify[y+1][x][2] == 0
-		return imgToModify
-					
-		def dilate(self, imgToModify): 
-			for y in range(1, len(imgToModify)-1): 
-				for x in range(1, len(imgToModify)-1):
-					if imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255: 
-						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
-						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
-						imgToModify[y-1][x][0] == 255 and imgToModify[y-1][x][1] == 255 and imgToModify[y-1][x][2] == 255
-						imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255
-						imgToModify[y][x][0] == 255 and imgToModify[y][x][1] == 255 and imgToModify[y][x][2] == 255
-						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
-						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
-						imgToModify[y+1][x][0] == 255 and imgToModify[y+1][x][1] == 255 and imgToModify[y+1][x][2] == 255
-			return imgToModify
-					
-
-		
-
-
+	
 # END OF IMAGEPROC
 
 
 if __name__ == "__main__":
 
-	cv2.namedWindow("Create View", flags=cv2.WINDOW_AUTOSIZE)
-	cv2.moveWindow("Create View", 21, 21)
+	cv2.namedWindow("Original Image View", flags=cv2.WINDOW_AUTOSIZE)
+	cv2.moveWindow("Original Image View", 21, 21)
+
+	cv2.namedWindow('Binary View')
+	cv2.moveWindow('Binary View', 300, 21)
+
+	cv2.namedWindow('Filtered View')
+	cv2.moveWindow('Filtered View', 600, 21)
 
 	cv2.namedWindow('sliders')
-	cv2.moveWindow('sliders', 680, 21)
-
-	cv2.namedWindow('Create View2')
-	cv2.moveWindow('Create View2', 300, 21)
+	cv2.moveWindow('sliders', 900, 21)
 
 	sm = StateMachine()
 	sm.start()
@@ -378,8 +386,9 @@ if __name__ == "__main__":
 
 	while(sm.RUNNING):
 		with imageLock:
-			cv2.imshow("Create View",sm.video.latestImg)
-			cv2.imshow("Create View2",sm.video.feedback)
+			cv2.imshow("Original Image View", sm.video.latestImg)
+			cv2.imshow("Binary View",sm.video.feedback)
+			cv2.imshow("Filtered View", sm.video.feedback_filtered)
 		cv2.waitKey(5)
 
 	cv2.destroyAllWindows()
