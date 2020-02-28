@@ -262,16 +262,18 @@ class ImageProc(threading.Thread):
 
 		for y in range(1, len(original)-1, scale):
 			for x in range(1, len(original)-1, scale):
-				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+				if	original[y][x][0] == 0 and\
+					original[y][x][1] == 0 and\
+					original[y][x][2] == 0:
 					for i in range(3):
-						imgToModify[y-1][x-1][i] = 0
-						imgToModify[y-1][x][i] = 0
-						imgToModify[y-1][x+1][i] = 0
-						imgToModify[y][x-1][i] = 0
-						imgToModify[y][x+1][i] = 0
-						imgToModify[y+1][x-1][i] = 0
-						imgToModify[y+1][x][i] = 0
-						imgToModify[y+1][x+1][i] = 0
+						imgToModify [y - 1]	[x - 1]	[i] = 0
+						imgToModify [y - 1]	[x]		[i] = 0
+						imgToModify [y - 1]	[x + 1]	[i] = 0
+						imgToModify [y]		[x - 1]	[i] = 0
+						imgToModify [y]		[x + 1]	[i] = 0
+						imgToModify [y + 1]	[x - 1]	[i] = 0
+						imgToModify [y + 1]	[x]		[i] = 0
+						imgToModify [y + 1]	[x + 1]	[i] = 0
 		self.feedback_filtered = imgToModify
 
 
@@ -280,7 +282,9 @@ class ImageProc(threading.Thread):
 
 		for y in range(how_big, len(original)-how_big, scale):
 			for x in range(how_big, len(original)-how_big, scale):
-				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+				if	original[y][x][0] == 0 and\
+					original[y][x][1] == 0 and\
+					original[y][x][2] == 0:
 					for i in range(3):
 						for j in range(y-how_big, y+how_big):
 							for k in range(x-how_big, x+how_big):
@@ -295,16 +299,18 @@ class ImageProc(threading.Thread):
 
 		for y in range(1, len(original)-1, scale):
 			for x in range(1, len(original)-1, scale):
-				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+				if	original[y][x][0] == 255 and\
+					original[y][x][1] == 255 and\
+					original[y][x][2] == 255:
 					for i in range(3):
-						imgToModify[y-1][x-1][i] = 255
-						imgToModify[y-1][x][i] = 255
-						imgToModify[y-1][x+1][i] = 255
-						imgToModify[y][x-1][i] = 255
-						imgToModify[y][x+1][i] = 255
-						imgToModify[y+1][x-1][i] = 255
-						imgToModify[y+1][x][i] = 255
-						imgToModify[y+1][x+1][i] = 255
+						imgToModify [y - 1]	[x - 1]	[i] = 255
+						imgToModify [y - 1]	[x]		[i] = 255
+						imgToModify [y - 1]	[x + 1]	[i] = 255
+						imgToModify [y]		[x - 1]	[i] = 255
+						imgToModify [y]		[x + 1]	[i] = 255
+						imgToModify [y + 1]	[x - 1]	[i] = 255
+						imgToModify [y + 1]	[x]		[i] = 255
+						imgToModify [y + 1]	[x + 1]	[i] = 255
 		self.feedback_filtered = imgToModify
 
 	def dilate_big(self, original, scale, how_big):
@@ -312,15 +318,17 @@ class ImageProc(threading.Thread):
 
 		for y in range(how_big, len(original)-how_big, scale):
 			for x in range(how_big, len(original)-how_big, scale):
-				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+				if	original[y][x][0] == 255 and\
+					original[y][x][1] == 255 and\
+					original[y][x][2] == 255:
 					for i in range(3):
 						for j in range(y-how_big, y+how_big):
 							for k in range(x-how_big, x+how_big):
 								imgToModify[j][k][i] = 255
 		self.feedback_filtered = imgToModify
 
-		#if no pixels are changed
-			#set all pink pixels to interesting
+		# if no pixels are changed
+		#	set all pink pixels to interesting
 
 
 
@@ -333,19 +341,49 @@ class ImageProc(threading.Thread):
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
-				#cone detection
-				if ((self.thresholds['low_hue'] <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue']) or\
-					((self.thresholds['low_hue'] >= self.thresholds['high_hue']) and (hsv_img[y][x][0] >= self.thresholds['low_hue'] or hsv_img[y][x][0] <= self.thresholds['high_hue']))) and\
-					self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
-					self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
-					imgToModify[y][x][0] = 255
-					imgToModify[y][x][1] = 255
-					imgToModify[y][x][2] = 255
+				if self.thresholds['low_hue'] >= self.thresholds['high_hue']:
+					if	(self.thresholds['low_hue']			<= hsv_img[y][x][0] or	hsv_img[y][x][0] <= self.thresholds['high_hue']) and\
+						self.thresholds['low_saturation']	<= hsv_img[y][x][1] and	hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
+						self.thresholds['low_value']		<= hsv_img[y][x][2] and	hsv_img[y][x][2] <= self.thresholds['high_value']:
+						imgToModify[y][x][0] = 255
+						imgToModify[y][x][1] = 255
+						imgToModify[y][x][2] = 255
+					else:
+						imgToModify[y][x][0] = 0
+						imgToModify[y][x][1] = 0
+						imgToModify[y][x][2] = 0
 				else:
-					imgToModify[y][x][0] = 0
-					imgToModify[y][x][1] = 0
-					imgToModify[y][x][2] = 0
+					if	self.thresholds['low_hue']			<= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'] and\
+						self.thresholds['low_saturation']	<= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
+						self.thresholds['low_value']		<= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
+						imgToModify[y][x][0] = 255
+						imgToModify[y][x][1] = 255
+						imgToModify[y][x][2] = 255
+					else:
+						imgToModify[y][x][0] = 0
+						imgToModify[y][x][1] = 0
+						imgToModify[y][x][2] = 0
 
+
+				# CONE DETECTION
+				#	if image saturation & value are within their respective upper and lower bounds, and
+				#	if image hue is within its respective upper and lower bounds, or
+				#	low_hue is greater than high_hue and either
+				#		the image's hue is less than high_hue (which is the new low bound) or
+				#		the image's hue is greater than low_hue (which is the new high bound)
+#				if	((self.thresholds['low_hue'] >= self.thresholds['high_hue'] and (self.thresholds['low_hue'] <= hsv_img[y][x][0] or hsv_img[y][x][0] <= self.thresholds['high_hue'])) or\
+#					(self.thresholds['low_hue']			<= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'])) and\
+#					self.thresholds['low_saturation']	<= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
+#					self.thresholds['low_value']		<= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
+#					imgToModify[y][x][0] = 255
+#					imgToModify[y][x][1] = 255
+#					imgToModify[y][x][2] = 255
+#
+#				else:
+#					imgToModify[y][x][0] = 0
+#					imgToModify[y][x][1] = 0
+#					imgToModify[y][x][2] = 0
+#
 #				if self.thresholds['low_blue'] <= self.latestImg[y,x][0] and self.latestImg[y,x][0] <= self.thresholds['high_blue']:
 #					imgToModify[y,x][0] = 255
 #					imgToModify[y,x][1] = 0
