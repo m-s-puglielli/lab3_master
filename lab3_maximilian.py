@@ -188,6 +188,7 @@ class Sensing(threading.Thread):
 
 
 class ImageProc(threading.Thread):
+
 	def __init__(self):
 		# NOTE: MUST call this to make sure we setup the thread correctly
 		threading.Thread.__init__(self)
@@ -205,7 +206,7 @@ class ImageProc(threading.Thread):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
 		stream = urllib.request.urlopen(url)
 		while(self.RUNNING):
-			# sleep(0.5)
+#			sleep(0.5)
 			bytes = b''
 			while self.RUNNING:
 				# Image size is about 40k bytes, so this loops about 5 times
@@ -215,10 +216,11 @@ class ImageProc(threading.Thread):
 				if a > b:
 					bytes = bytes[b+2:]
 					continue
-				if a != -1 and b != -1:
+				if	a != -1 and\
+					b != -1:
 					jpg = bytes[a:b+2]
-#                    bytes = bytes[b+2:]
-#                    print("found image", a, b, len(bytes))
+#					bytes = bytes[b+2:]
+#					print("found image", a, b, len(bytes))
 					break
 			img = cv2.imdecode(numpy.frombuffer(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
 			# Resize to half size so that image processing is faster
@@ -234,6 +236,15 @@ class ImageProc(threading.Thread):
 			# After image processing you can update here to see the new version
 			with imageLock:
 				self.feedback = copy.deepcopy(img)
+
+			# CALL BOX FUNCTION HERE
+#			self.box_function()
+
+			with imageLock:
+				self.feedback_filtered = copy.deepcopy(img)
+
+	def draw_box(self, original):
+		pass
 
 	def setThresh(self, name, value):
 		self.thresholds[name] = value
@@ -281,6 +292,9 @@ if __name__ == "__main__":
 
 	cv2.namedWindow('sliders')
 	cv2.moveWindow('sliders', 680, 21)
+
+	cv2.namedWindow("Filtered View")
+	cv2.moveWindow("Filtered View", 600, 21)
 
 	cv2.namedWindow('Create View2')
 	cv2.moveWindow('Create View2', 300, 21)
