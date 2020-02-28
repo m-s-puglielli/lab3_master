@@ -24,10 +24,10 @@ imageLock = threading.Lock()
 IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
-	SEARCH    = enum.auto()
-	TURN_LEFT    = enum.auto()
-	TURN_RIGHT   = enum.auto()
-	MOVE_FORWARD = enum.auto()
+	SEARCH			= enum.auto()
+	TURN_LEFT		= enum.auto()
+	TURN_RIGHT		= enum.auto()
+	MOVE_FORWARD	= enum.auto()
 
 class StateMachine(threading.Thread):
 
