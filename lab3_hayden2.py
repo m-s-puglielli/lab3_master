@@ -155,9 +155,10 @@ class ImageProc(threading.Thread):
 		self.RUNNING = True
 		self.latestImg = []
 		self.feedback = []
-		self.thresholds = {'low_hue':       0, 'high_hue':        0,\
-						   'low_saturation':0, 'high_saturation': 0,\
-						   'low_value':     0, 'high_value':      0}
+		self.thresholds = {'low_hue':        5, 'high_hue':          23,\
+						   'low_saturation': 147, 'high_saturation': 255,\
+						   'low_value':      89, 'high_value':       224}
+
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
