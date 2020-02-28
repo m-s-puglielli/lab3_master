@@ -205,9 +205,9 @@ class ImageProc(threading.Thread):
 		# 					'low_value':      0, 'high_value':       255}
 
 		# tennisball in the morning
-		self.thresholds = {'low_hue':       30, 'high_hue':          56,
-							'low_saturation': 28, 'high_saturation': 160,
-							'low_value':      84, 'high_value':       255}
+		self.thresholds = {	'low_hue':			30, 'high_hue':			56,
+							'low_saturation':	28, 'high_saturation':	160,
+							'low_value':		84, 'high_value':		255	}
 
 
 	def run(self):
@@ -246,15 +246,21 @@ class ImageProc(threading.Thread):
 				self.feedback = copy.deepcopy(img)
 
 			# erode and dilate the processed image
-			self.dilate_big(img, 2, 2)
-			self.dilate_big(img, 2, 2)
-			self.erode_big(img, 2, 2)
-			self.erode_big(img, 2, 2)
-			self.erode(img, 2)
+#			self.dilate_big(img, 2, 2)
+#			self.dilate_big(img, 2, 2)
+#			self.erode_big(img, 2, 2)
+#			self.erode_big(img, 2, 2)
 
 			# after eroding the image you can see the update in feedback_filtered
 			with imageLock:
 				self.feedback_filtered = copy.deepcopy(img)
+				self.feedback_filtered = self.dilate_big(self.feedback_filtered, 2, 2)
+				self.feedback_filtered = self.erode(self.feedback_filtered, 2)
+
+			# Track Circles
+			self.track_circles(self.feedback_filtered)
+
+
 
 	def draw_box(self, original):
 		pass
@@ -265,7 +271,7 @@ class ImageProc(threading.Thread):
 	# if a pixel is not interesting, make all surrounding pixels not interesting
 	# white, (255,255,255) is "interesting", black is not
 	def erode(self, original, scale):
-		imgToModify = original
+		imgToModify = copy.deepcopy(original)
 
 		for y in range(1, len(original)-1, scale):
 			for x in range(1, len(original)-1, scale):
@@ -281,7 +287,8 @@ class ImageProc(threading.Thread):
 						imgToModify [y + 1]	[x - 1]	[i] = 0
 						imgToModify [y + 1]	[x]		[i] = 0
 						imgToModify [y + 1]	[x + 1]	[i] = 0
-		self.feedback_filtered = imgToModify
+#		self.feedback_filtered = imgToModify
+		return copy.deepcopy(imgToModify)
 
 
 	def erode_big(self, original, scale, how_big):
@@ -321,7 +328,7 @@ class ImageProc(threading.Thread):
 		self.feedback_filtered = imgToModify
 
 	def dilate_big(self, original, scale, how_big):
-		imgToModify = original
+		imgToModify = copy.deepcopy(original)
 
 		for y in range(how_big, len(original)-how_big, scale):
 			for x in range(how_big, len(original)-how_big, scale):
@@ -332,12 +339,22 @@ class ImageProc(threading.Thread):
 						for j in range(y-how_big, y+how_big):
 							for k in range(x-how_big, x+how_big):
 								imgToModify[j][k][i] = 255
-		self.feedback_filtered = imgToModify
+#		self.feedback_filtered = imgToModify
+		return copy.deepcopy(imgToModify)
 
 		# if no pixels are changed
 		#	set all pink pixels to interesting
 
-
+	def track_circles(self, imgToModify):
+		# CIRCLE TRACKING
+		gray = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2GRAY)
+		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
+		if circles is not None:
+			circles = np.round(circles[0, :]).astype("int")
+			for (x, y, r) in circles:
+				print("Circle at {0}, {1}, with radius {2}".format(x, y, r))
+				cv2.circle(imgToModify, (x, y), r, (0, 255, 0), 4)
+				cv2.rectangle(imgToModify, (x - 5, y - 5), (x + 5, y + 5), (0, 0, 255), -1)
 
 	def doImgProc(self, imgToModify):
 #		pixel = self.latestImg[120,160]
@@ -370,16 +387,6 @@ class ImageProc(threading.Thread):
 						imgToModify[y][x][0] = 0
 						imgToModify[y][x][1] = 0
 						imgToModify[y][x][2] = 0
-
-		# CIRCLE TRACKING
-		gray = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2GRAY)
-		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
-		if circles is not None:
-			circles = np.round(circles[0, :]).astype("int")
-			for (x, y, r) in circles:
-				cv2.circle(imgToModify, (x, y), r, (0, 255, 0), 4)
-				cv2.rectangle(imgToModify, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-
 
 				# CONE DETECTION
 				#	if image saturation & value are within their respective upper and lower bounds, and
