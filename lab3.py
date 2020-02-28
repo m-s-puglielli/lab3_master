@@ -333,21 +333,8 @@ class ImageProc(threading.Thread):
 #		pixel = self.latestImg[120,160]
 #		print("pixel (160, 120) is ",pixel, "in B,G,R order.")
 
-		hsv_img = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2HSV)
-
-		# CIRCLE TRACKING
-		gray = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2GRAY)
-		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
-
-		if circles is not None:
-			circles = np.round(circles[0, :]).astype("int")
-
-			for (x, y, r) in circles:
-				cv2.circle(output, (x, y), r, (0, 255, 0), 4)
-				cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-
-			cv2.imshow("output", np.hstack([image, output]))
-			cv2.waitKey(0)
+#		hsv_img = cv2.cvtColor(self.latestImg, cv2.COLOR_BGR2HSV)
+		hsv_img = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2HSV)
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
@@ -373,6 +360,15 @@ class ImageProc(threading.Thread):
 						imgToModify[y][x][0] = 0
 						imgToModify[y][x][1] = 0
 						imgToModify[y][x][2] = 0
+
+		# CIRCLE TRACKING
+		gray = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2GRAY)
+		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
+		if circles is not None:
+			circles = np.round(circles[0, :]).astype("int")
+			for (x, y, r) in circles:
+				cv2.circle(imgToModify, (x, y), r, (0, 255, 0), 4)
+				cv2.rectangle(imgToModify, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
 
 
 				# CONE DETECTION
