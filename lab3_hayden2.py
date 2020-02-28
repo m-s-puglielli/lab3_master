@@ -24,6 +24,11 @@ IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
 	LISTEN = enum.auto()
+	SEARCH = enum.auto()
+	STRAFE_RIGHT = enum.auto()
+	STRAFE_LEFT = enum.auto()
+	FORWARD = enum.auto()
+
 
 class StateMachine(threading.Thread):
 
@@ -35,7 +40,7 @@ class StateMachine(threading.Thread):
 		self.IP_ADDRESS = IP_ADDRESS
 		self.CONTROLLER_PORT = 5001
 		self.TIMEOUT = 10   # If its unable to connect after 10 seconds, give up.  Want this to be a while so robot can init.
-		self.STATE = States.LISTEN
+		self.STATE = States.SEARCH
 		self.RUNNING = True
 		self.DIST = False
 		self.video = ImageProc()
@@ -74,9 +79,93 @@ class StateMachine(threading.Thread):
 	def run(self):
 		while(self.RUNNING):
 			sleep(0.1)
-			if self.STATE == States.LISTEN:
+			if self.STATE == States.LISTEN: 
 				pass
-			# TODO: Work here
+			if self.STATE == States.SEARCH:
+				# ball_found = False
+				for i in range(10): 
+					i = i+1
+					pass
+					#turn left a bit
+					#scan 
+					#if ball found 
+						# ball_found = true 
+						# break 
+				#beep because ball not found 
+				#_____Running = false;
+				
+			if self.STATE == States.FORWARD:
+				print("State: FORWARD")
+				with socketLock:
+					self.sock.sendall("a drive_straight(50)".encode())
+					discard = self.sock.recv(128).decode()
+				sleep(0.2)
+				#if ball is to the left 
+					# self.STATE = States.STRAFE_LEFT
+				# else if ball is to the right 
+					# self.STATE = States.STRAFE_RIGHT
+				# if no ball
+					# self.STATE = States.SEARCH
+			if self.STATE == States.STRAFE_LEFT:
+				pass
+			if self.STATE == States.STRAFE_RIGHT:
+				pass
+##########################################################
+		# while(self.RUNNING):
+        #     sleep(0.1)
+        #     if self.STATE == States.LISTEN:
+        #         print("STATE: LISTEN")
+        #         # pass
+        #         self.STATE = States.ON_LINE
+        #     if self.STATE == States.ON_LINE:
+        #         # print("STATE: ON_LINE")
+
+        #         # print(drive_forward(50))
+        #         # ALT: print(self.drive_forward(50))
+
+        #         with socketLock:
+        #             self.sock.sendall("a drive_straight(50)".encode())
+        #             discard = self.sock.recv(128).decode()
+
+        #         # drive forward
+        #         # with socketLock:
+        #         #     self.sock.sendall("a drive_straight(50)".encode())
+        #         #     print(self.sock.recv(128).decode())
+        #         sleep(.05)
+
+        #         # if line sensed on left
+        #         if self.sensors.left_sensor < 700: #seen black tape
+        #             print("LEFT")
+        #             self.STATE = States.CORRECTING_LEFT
+
+        #         #if line sensed on right
+        #         if self.sensors.right_sensor < 1400:
+        #             print("RIGHT")
+        #             self.STATE = States.CORRECTING_RIGHT
+        #     if self.STATE == States.CORRECTING_LEFT:
+        #         # spin left
+        #         with socketLock:
+        #             self.sock.sendall("a spin_left(75)".encode())
+            #         discard = self.sock.recv(128).decode()
+            #     sleep(0.05)
+
+            #     # # then turn off and close connection
+            #     # self.sock.sendall("c".  encode())
+            #     # print(self.sock.recv(128).decode())
+            #     #
+            #     # self.sock.close()
+
+            #     self.STATE = States.ON_LINE
+
+            # if self.STATE == States.CORRECTING_RIGHT:
+            #     # spin right
+            #     with socketLock:
+            #         self.sock.sendall("a spin_right(75)".encode())
+            #         discard = self.sock.recv(128).decode()
+            #     sleep(0.05)
+
+            #     self.STATE = States.ON_LINE
+#########################################################
 
 	# END OF CONTROL LOOP
 
@@ -155,10 +244,16 @@ class ImageProc(threading.Thread):
 		self.RUNNING = True
 		self.latestImg = []
 		self.feedback = []
-		self.thresholds = {'low_hue':        5, 'high_hue':          23,\
-						   'low_saturation': 147, 'high_saturation': 255,\
-						   'low_value':      89, 'high_value':       224}
-
+		self.feedback_filtered = []
+		# self.thresholds = {'low_hue':        5, 'high_hue':          23,\
+		# 				   'low_saturation': 147, 'high_saturation': 255,\
+		# 				   'low_value':      89, 'high_value':       224}
+		# self.thresholds = {'low_hue':        150, 'high_hue':          23,
+        #              'low_saturation': 210, 'high_saturation': 244,
+        #              'low_value':      194, 'high_value':       221}
+		self.thresholds = {'low_hue':       144, 'high_hue':          14,
+							'low_saturation': 0, 'high_saturation': 255,
+							'low_value':      114, 'high_value':       255}
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -179,7 +274,7 @@ class ImageProc(threading.Thread):
 #                    bytes = bytes[b+2:]
 #                    print("found image", a, b, len(bytes))
 					break
-			img = cv2.imdecode(numpy.fromstring(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
+			img = cv2.imdecode(numpy.frombuffer(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
 			# Resize to half size so that image processing is faster
 			img = cv2.resize(img, ((int)(len(img[0])/4),(int)(len(img)/4)))
 
@@ -189,14 +284,92 @@ class ImageProc(threading.Thread):
 
 			# Pass by reference for all non-primitve types in Python
 			self.doImgProc(img)
-
+			
 			# After image processing you can update here to see the new version
 			with imageLock:
 				self.feedback = copy.deepcopy(img)
 
+			#erode and dilate the processed image 
+			self.dilate_big(img, 2, 2)
+			self.erode_big(img, 2, 2)
+			
+			# after eroding the image you can see the update in feedback_filtered
+			with imageLock: 
+				self.feedback_filtered = copy.deepcopy(img)
+			
+
 	def setThresh(self, name, value):
 		self.thresholds[name] = value
 
+	#if a pixel is not interesting, make all surrounding pixels not interesting
+	#white, (255,255,255) is "interesting", black is not
+	def erode(self, original, scale):
+		imgToModify = original
+		
+		for y in range(1, len(original)-1, scale):
+			for x in range(1, len(original)-1, scale):
+				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+					for i in range(3):
+						imgToModify[y-1][x-1][i] = 0
+						imgToModify[y-1][x][i] = 0
+						imgToModify[y-1][x+1][i] = 0
+						imgToModify[y][x-1][i] = 0
+						imgToModify[y][x+1][i] = 0
+						imgToModify[y+1][x-1][i] = 0
+						imgToModify[y+1][x][i] = 0
+						imgToModify[y+1][x+1][i] = 0
+		self.feedback_filtered = imgToModify
+
+
+	def erode_big(self, original, scale, how_big):
+		imgToModify = original
+		
+		for y in range(how_big, len(original)-how_big, scale):
+			for x in range(how_big, len(original)-how_big, scale):
+				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+					for i in range(3):
+						for j in range(y-how_big, y+how_big): 
+							for k in range(x-how_big, x+how_big):
+								imgToModify[j][k][i] = 0
+		self.feedback_filtered = imgToModify
+	
+
+	#if a pixel is interesting, make all surrounding pixels interesting
+	#white, (255,255,255) is "interesting", black is not
+	def dilate(self, original, scale):
+		imgToModify = original
+		
+		for y in range(1, len(original)-1, scale):
+			for x in range(1, len(original)-1, scale):
+				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+					for i in range(3):
+						imgToModify[y-1][x-1][i] = 255
+						imgToModify[y-1][x][i] = 255
+						imgToModify[y-1][x+1][i] = 255
+						imgToModify[y][x-1][i] = 255
+						imgToModify[y][x+1][i] = 255
+						imgToModify[y+1][x-1][i] = 255
+						imgToModify[y+1][x][i] = 255
+						imgToModify[y+1][x+1][i] = 255
+		self.feedback_filtered = imgToModify
+		
+	def dilate_big(self, original, scale, how_big):
+		imgToModify = original
+		
+		for y in range(how_big, len(original)-how_big, scale):
+			for x in range(how_big, len(original)-how_big, scale):
+				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+					for i in range(3):
+						for j in range(y-how_big, y+how_big): 
+							for k in range(x-how_big, x+how_big):
+								imgToModify[j][k][i] = 255
+		self.feedback_filtered = imgToModify
+	
+		#if no pixels are changed
+			#set all pink pixels to interesting 
+
+
+	
 	def doImgProc(self, imgToModify):
 #		pixel = self.latestImg[120,160]
 #		print("pixel (160, 120) is ",pixel, "in B,G,R order.")
@@ -206,39 +379,35 @@ class ImageProc(threading.Thread):
 
 		for y in range(len(hsv_img)):
 			for x in range(len(hsv_img[0])):
-				if self.thresholds['low_hue']        <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue'] and\
-				   self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
-				   self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
+				#cone detection
+				if ((self.thresholds['low_hue'] <= hsv_img[y][x][0] and hsv_img[y][x][0] <= self.thresholds['high_hue']) or\
+					((self.thresholds['low_hue'] >= self.thresholds['high_hue']) and (hsv_img[y][x][0] >= self.thresholds['low_hue'] or hsv_img[y][x][0] <= self.thresholds['high_hue']))) and\
+					self.thresholds['low_saturation'] <= hsv_img[y][x][1] and hsv_img[y][x][1] <= self.thresholds['high_saturation'] and\
+					self.thresholds['low_value']      <= hsv_img[y][x][2] and hsv_img[y][x][2] <= self.thresholds['high_value']:
+						imgToModify[y][x][0] = 255
+						imgToModify[y][x][1] = 255
+						imgToModify[y][x][2] = 255			
+				else:
 					imgToModify[y][x][0] = 0
 					imgToModify[y][x][1] = 0
-					imgToModify[y][x][2] = 255
-#				if self.thresholds['low_blue'] <= self.latestImg[y,x][0] and self.latestImg[y,x][0] <= self.thresholds['high_blue']:
-#					imgToModify[y,x][0] = 255
-#					imgToModify[y,x][1] = 0
-#					imgToModify[y,x][2] = 0
-#				if self.thresholds['low_green'] <= self.latestImg[y,x][1] and self.latestImg[y,x][1] <= self.thresholds['high_green']:
-#					imgToModify[y,x][0] = 0
-#					imgToModify[y,x][1] = 255
-#					imgToModify[y,x][2] = 0
-#				if self.thresholds['low_red'] <= self.latestImg[y,x][2] and self.latestImg[y,x][2] <= self.thresholds['high_red']:
-#					imgToModify[y,x][0] = 0
-#					imgToModify[y,x][1] = 0
-#					imgToModify[y,x][2] = 255
-		# TODO: Work here
-
+					imgToModify[y][x][2] = 0
+	
 # END OF IMAGEPROC
 
 
 if __name__ == "__main__":
 
-	cv2.namedWindow("Create View", flags=cv2.WINDOW_AUTOSIZE)
-	cv2.moveWindow("Create View", 21, 21)
+	cv2.namedWindow("Original Image View", flags=cv2.WINDOW_AUTOSIZE)
+	cv2.moveWindow("Original Image View", 21, 21)
+
+	cv2.namedWindow('Binary View')
+	cv2.moveWindow('Binary View', 300, 21)
+
+	cv2.namedWindow('Filtered View')
+	cv2.moveWindow('Filtered View', 600, 21)
 
 	cv2.namedWindow('sliders')
-	cv2.moveWindow('sliders', 680, 21)
-
-	cv2.namedWindow('Create View2')
-	cv2.moveWindow('Create View2', 300, 21)
+	cv2.moveWindow('sliders', 900, 21)
 
 	sm = StateMachine()
 	sm.start()
@@ -256,8 +425,9 @@ if __name__ == "__main__":
 
 	while(sm.RUNNING):
 		with imageLock:
-			cv2.imshow("Create View",sm.video.latestImg)
-			cv2.imshow("Create View2",sm.video.feedback)
+			cv2.imshow("Original Image View", sm.video.latestImg)
+			cv2.imshow("Binary View",sm.video.feedback)
+			cv2.imshow("Filtered View", sm.video.feedback_filtered)
 		cv2.waitKey(5)
 
 	cv2.destroyAllWindows()
