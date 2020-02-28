@@ -251,9 +251,9 @@ class ImageProc(threading.Thread):
 		# self.thresholds = {'low_hue':        150, 'high_hue':          23,
         #              'low_saturation': 210, 'high_saturation': 244,
         #              'low_value':      194, 'high_value':       221}
-		self.thresholds = {'low_hue':       144, 'high_hue':          9,
+		self.thresholds = {'low_hue':       144, 'high_hue':          14,
 							'low_saturation': 0, 'high_saturation': 255,
-							'low_value':      114, 'high_value':       227}
+							'low_value':      114, 'high_value':       255}
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -274,7 +274,7 @@ class ImageProc(threading.Thread):
 #                    bytes = bytes[b+2:]
 #                    print("found image", a, b, len(bytes))
 					break
-			img = cv2.imdecode(numpy.fromstring(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
+			img = cv2.imdecode(numpy.frombuffer(jpg, dtype=numpy.uint8),cv2.IMREAD_COLOR)
 			# Resize to half size so that image processing is faster
 			img = cv2.resize(img, ((int)(len(img[0])/4),(int)(len(img)/4)))
 
@@ -289,9 +289,10 @@ class ImageProc(threading.Thread):
 			with imageLock:
 				self.feedback = copy.deepcopy(img)
 
-			#erode the processed image 
-			self.erode(img)
-
+			#erode and dilate the processed image 
+			self.dilate_big(img, 2, 2)
+			self.erode_big(img, 2, 2)
+			
 			# after eroding the image you can see the update in feedback_filtered
 			with imageLock: 
 				self.feedback_filtered = copy.deepcopy(img)
@@ -302,33 +303,71 @@ class ImageProc(threading.Thread):
 
 	#if a pixel is not interesting, make all surrounding pixels not interesting
 	#white, (255,255,255) is "interesting", black is not
-	def erode(self, original):
+	def erode(self, original, scale):
 		imgToModify = original
 		
-		for y in range(1, len(original)-1, 3):
-			for x in range(1, len(original)-1, 3):
+		for y in range(1, len(original)-1, scale):
+			for x in range(1, len(original)-1, scale):
 				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
 					for i in range(3):
 						imgToModify[y-1][x-1][i] = 0
+						imgToModify[y-1][x][i] = 0
+						imgToModify[y-1][x+1][i] = 0
 						imgToModify[y][x-1][i] = 0
 						imgToModify[y][x+1][i] = 0
+						imgToModify[y+1][x-1][i] = 0
+						imgToModify[y+1][x][i] = 0
 						imgToModify[y+1][x+1][i] = 0
 		self.feedback_filtered = imgToModify
 
-	#if a pixel is interesting, make all surrounding pixels interesting
-	#white, (255,255,255) is "interesting", black is not
-	def dilate(self, original):
+
+	def erode_big(self, original, scale, how_big):
 		imgToModify = original
 		
-		for y in range(1, len(original)-1, 3):
-			for x in range(1, len(original)-1, 3):
+		for y in range(how_big, len(original)-how_big, scale):
+			for x in range(how_big, len(original)-how_big, scale):
+				if original[y][x][0] == 0 and original[y][x][1] == 0 and original[y][x][2] == 0:
+					for i in range(3):
+						for j in range(y-how_big, y+how_big): 
+							for k in range(x-how_big, x+how_big):
+								imgToModify[j][k][i] = 0
+		self.feedback_filtered = imgToModify
+	
+
+	#if a pixel is interesting, make all surrounding pixels interesting
+	#white, (255,255,255) is "interesting", black is not
+	def dilate(self, original, scale):
+		imgToModify = original
+		
+		for y in range(1, len(original)-1, scale):
+			for x in range(1, len(original)-1, scale):
 				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
 					for i in range(3):
 						imgToModify[y-1][x-1][i] = 255
+						imgToModify[y-1][x][i] = 255
+						imgToModify[y-1][x+1][i] = 255
 						imgToModify[y][x-1][i] = 255
 						imgToModify[y][x+1][i] = 255
+						imgToModify[y+1][x-1][i] = 255
+						imgToModify[y+1][x][i] = 255
 						imgToModify[y+1][x+1][i] = 255
 		self.feedback_filtered = imgToModify
+		
+	def dilate_big(self, original, scale, how_big):
+		imgToModify = original
+		
+		for y in range(how_big, len(original)-how_big, scale):
+			for x in range(how_big, len(original)-how_big, scale):
+				if original[y][x][0] == 255 and original[y][x][1] == 255 and original[y][x][2] == 255:
+					for i in range(3):
+						for j in range(y-how_big, y+how_big): 
+							for k in range(x-how_big, x+how_big):
+								imgToModify[j][k][i] = 255
+		self.feedback_filtered = imgToModify
+	
+		#if no pixels are changed
+			#set all pink pixels to interesting 
+
 
 	
 	def doImgProc(self, imgToModify):
