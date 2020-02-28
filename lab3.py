@@ -199,9 +199,9 @@ class ImageProc(threading.Thread):
 		self.RUNNING = True
 		self.latestImg = []
 		self.feedback = []
-		self.thresholds = {'low_hue':       144, 'high_hue':          14,
+		self.thresholds = {'low_hue':       127, 'high_hue':          14,
 							'low_saturation': 0, 'high_saturation': 255,
-							'low_value':      114, 'high_value':       255}
+							'low_value':      0, 'high_value':       255}
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
@@ -240,7 +240,10 @@ class ImageProc(threading.Thread):
 
 			# erode and dilate the processed image
 			self.dilate_big(img, 2, 2)
+			self.dilate_big(img, 2, 2)
 			self.erode_big(img, 2, 2)
+			self.erode_big(img, 2, 2)
+			self.erode(img, 2)
 
 			# after eroding the image you can see the update in feedback_filtered
 			with imageLock:
