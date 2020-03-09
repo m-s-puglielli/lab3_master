@@ -24,10 +24,10 @@ imageLock = threading.Lock()
 IP_ADDRESS = "192.168.1.103"
 
 class States(enum.Enum):
-	SEARCH    = enum.auto()
-	TURN_LEFT    = enum.auto()
-	TURN_RIGHT   = enum.auto()
-	MOVE_FORWARD = enum.auto()
+	SEARCH			= enum.auto()
+	TURN_LEFT		= enum.auto()
+	TURN_RIGHT		= enum.auto()
+	MOVE_FORWARD		= enum.auto()
 
 class StateMachine(threading.Thread):
 
@@ -157,8 +157,8 @@ class StateMachine(threading.Thread):
 		print('{0} released'.format(key))
 		if key == keyboard.Key.esc:
 			# STOP LISTENER
-			self.RUNNING			= False
-			self.sensors.RUNNING	= False
+			self.RUNNING				= False
+			self.sensors.RUNNING		= False
 			self.video.RUNNING		= False
 			return False
 

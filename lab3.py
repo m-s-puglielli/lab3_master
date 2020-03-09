@@ -17,8 +17,8 @@ import numpy
 import copy
 from random import randint
 
-socketLock = threading.Lock()
-imageLock = threading.Lock()
+socketLock	= threading.Lock()
+imageLock	= threading.Lock()
 
 # SET THIS TO THE RASPBERRY PI's IP ADDRESS
 IP_ADDRESS = "192.168.1.103"
