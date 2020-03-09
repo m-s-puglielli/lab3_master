@@ -6,8 +6,6 @@ Lab #3: Computer Vision & General Suffering
 """
 
 import socket
-from time import *
-from pynput import keyboard
 import sys
 import threading
 import enum
@@ -15,6 +13,8 @@ import urllib.request
 import cv2
 import numpy
 import copy
+import time
+from pynput import keyboard
 from random import randint
 
 socketLock	= threading.Lock()
@@ -254,11 +254,12 @@ class ImageProc(threading.Thread):
 			# after eroding the image you can see the update in feedback_filtered
 			with imageLock:
 				self.feedback_filtered = copy.deepcopy(img)
-				self.feedback_filtered = self.dilate_big(self.feedback_filtered, 2, 2)
-				self.feedback_filtered = self.erode(self.feedback_filtered, 2)
+				self.dilate_big(self.feedback_filtered, 2, 2)
+				self.erode(self.feedback_filtered, 2)
 
 			# Track Circles
-			self.track_circles(self.feedback_filtered)
+			with imageLock:
+				self.track_circles(self.feedback_filtered)
 
 
 
@@ -270,14 +271,12 @@ class ImageProc(threading.Thread):
 
 	# if a pixel is not interesting, make all surrounding pixels not interesting
 	# white, (255,255,255) is "interesting", black is not
-	def erode(self, original, scale):
-		imgToModify = copy.deepcopy(original)
-
-		for y in range(1, len(original)-1, scale):
-			for x in range(1, len(original)-1, scale):
-				if	original[y][x][0] == 0 and\
-					original[y][x][1] == 0 and\
-					original[y][x][2] == 0:
+	def erode(self, imgToModify, scale):
+		for y in range(1, len(imgToModify)-1, scale):
+			for x in range(1, len(imgToModify[0])-1, scale):
+				if	imgToModify[y][x][0] == 0 and\
+					imgToModify[y][x][1] == 0 and\
+					imgToModify[y][x][2] == 0:
 					for i in range(3):
 						imgToModify [y - 1]	[x - 1]	[i] = 0
 						imgToModify [y - 1]	[x]		[i] = 0
@@ -287,63 +286,53 @@ class ImageProc(threading.Thread):
 						imgToModify [y + 1]	[x - 1]	[i] = 0
 						imgToModify [y + 1]	[x]		[i] = 0
 						imgToModify [y + 1]	[x + 1]	[i] = 0
+
+#	def erode_big(self, original, scale, how_big):
+#		imgToModify = original
+#
+#		for y in range(how_big, len(original)-how_big, scale):
+#			for x in range(how_big, len(original)-how_big, scale):
+#				if	original[y][x][0] == 0 and\
+#					original[y][x][1] == 0 and\
+#					original[y][x][2] == 0:
+#					for i in range(3):
+#						for j in range(y-how_big, y+how_big):
+#							for k in range(x-how_big, x+how_big):
+#								imgToModify[j][k][i] = 0
 #		self.feedback_filtered = imgToModify
-		return copy.deepcopy(imgToModify)
-
-
-	def erode_big(self, original, scale, how_big):
-		imgToModify = original
-
-		for y in range(how_big, len(original)-how_big, scale):
-			for x in range(how_big, len(original)-how_big, scale):
-				if	original[y][x][0] == 0 and\
-					original[y][x][1] == 0 and\
-					original[y][x][2] == 0:
-					for i in range(3):
-						for j in range(y-how_big, y+how_big):
-							for k in range(x-how_big, x+how_big):
-								imgToModify[j][k][i] = 0
-		self.feedback_filtered = imgToModify
 
 
 	# if a pixel is interesting, make all surrounding pixels interesting
 	# white, (255,255,255) is "interesting", black is not
-	def dilate(self, original, scale):
-		imgToModify = original
-
-		for y in range(1, len(original)-1, scale):
-			for x in range(1, len(original)-1, scale):
-				if	original[y][x][0] == 255 and\
-					original[y][x][1] == 255 and\
-					original[y][x][2] == 255:
-					for i in range(3):
-						imgToModify [y - 1]	[x - 1]	[i] = 255
-						imgToModify [y - 1]	[x]		[i] = 255
-						imgToModify [y - 1]	[x + 1]	[i] = 255
-						imgToModify [y]		[x - 1]	[i] = 255
-						imgToModify [y]		[x + 1]	[i] = 255
-						imgToModify [y + 1]	[x - 1]	[i] = 255
-						imgToModify [y + 1]	[x]		[i] = 255
-						imgToModify [y + 1]	[x + 1]	[i] = 255
-		self.feedback_filtered = imgToModify
-
-	def dilate_big(self, original, scale, how_big):
-		imgToModify = copy.deepcopy(original)
-
-		for y in range(how_big, len(original)-how_big, scale):
-			for x in range(how_big, len(original)-how_big, scale):
-				if	original[y][x][0] == 255 and\
-					original[y][x][1] == 255 and\
-					original[y][x][2] == 255:
-					for i in range(3):
-						for j in range(y-how_big, y+how_big):
-							for k in range(x-how_big, x+how_big):
-								imgToModify[j][k][i] = 255
+#	def dilate(self, original, scale):
+#		imgToModify = original
+#
+#		for y in range(1, len(original)-1, scale):
+#			for x in range(1, len(original)-1, scale):
+#				if	original[y][x][0] == 255 and\
+#					original[y][x][1] == 255 and\
+#					original[y][x][2] == 255:
+#					for i in range(3):
+#						imgToModify [y - 1]	[x - 1]	[i] = 255
+#						imgToModify [y - 1]	[x]		[i] = 255
+#						imgToModify [y - 1]	[x + 1]	[i] = 255
+#						imgToModify [y]		[x - 1]	[i] = 255
+#						imgToModify [y]		[x + 1]	[i] = 255
+#						imgToModify [y + 1]	[x - 1]	[i] = 255
+#						imgToModify [y + 1]	[x]		[i] = 255
+#						imgToModify [y + 1]	[x + 1]	[i] = 255
 #		self.feedback_filtered = imgToModify
-		return copy.deepcopy(imgToModify)
 
-		# if no pixels are changed
-		#	set all pink pixels to interesting
+	def dilate_big(self, imgToModify, scale, how_big):
+		for y in range(how_big, len(imgToModify)-how_big, scale):
+			for x in range(how_big, len(imgToModify[0])-how_big, scale):
+				if	imgToModify[y][x][0] == 255 and\
+					imgToModify[y][x][1] == 255 and\
+					imgToModify[y][x][2] == 255:
+					for i in range(3):
+						for j in range(y - how_big, y + how_big):
+							for k in range(x - how_big, x + how_big):
+								imgToModify[j][k][i] = 255
 
 	def track_circles(self, imgToModify):
 		# CIRCLE TRACKING
