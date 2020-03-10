@@ -51,3 +51,7 @@ HSV for red cone:
   H: 38.1/2     = 19.05
   S: 96.7*2.55  = 246.585
   V: 84.3*2.55  = 214.965
+
+https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
+
+https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html?highlight=circle
