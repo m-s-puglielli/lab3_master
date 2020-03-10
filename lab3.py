@@ -79,7 +79,7 @@ class StateMachine(threading.Thread):
 	# BEGINNING OF THE CONTROL LOOP
 	def run(self):
 		while(self.RUNNING):
-			sleep(0.01)
+			time.sleep(0.01)
 			if self.STATE == States.SEARCH:
 				pass
 				#rnd = randint(1, 3)
@@ -95,7 +95,7 @@ class StateMachine(threading.Thread):
 			elif self.STATE == States.TURN_LEFT:
 				self.sock.sendall("a drive_direct(500, -500)".encode())
 				discard = self.sock.recv(128).decode()
-				sleep(0.05)
+				time.sleep(0.05)
 				self.sock.sendall("a drive_straight(0)".encode())
 				discard = self.sock.recv(128).decode()
 				self.STATE = States.SEARCH
@@ -103,7 +103,7 @@ class StateMachine(threading.Thread):
 			elif self.STATE == States.TURN_RIGHT:
 				self.sock.sendall("a drive_direct(-500, 500)".encode())
 				discard = self.sock.recv(128).decode()
-				sleep(0.05)
+				time.sleep(0.05)
 				self.sock.sendall("a drive_straight(0)".encode())
 				discard = self.sock.recv(128).decode()
 				self.STATE = States.SEARCH
@@ -111,7 +111,7 @@ class StateMachine(threading.Thread):
 			elif self.STATE == States.MOVE_FORWARD:
 				self.sock.sendall("a drive_direct(500, 500)".encode())
 				discard = self.sock.recv(128).decode()
-				sleep(0.5)
+				time.sleep(0.5)
 				self.sock.sendall("a drive_straight(0)".encode())
 				discard = self.sock.recv(128).decode()
 				self.STATE = States.SEARCH
@@ -127,7 +127,7 @@ class StateMachine(threading.Thread):
 		self.video.RUNNING = False
 
 		# WAIT FOR THREADS TO FINISH
-		sleep(1)
+		time.sleep(1)
 
 		# NEED TO DISCONNECT
 		"""
@@ -176,7 +176,7 @@ class Sensing(threading.Thread):
 
 	def run(self):
 		while self.RUNNING:
-			sleep(0.1)
+			time.sleep(0.1)
 			# This is where I would get a sensor update
 			# Store it in this class
 			# You can change the polling frequency to optimize performance, don't forget to use socketLock
@@ -205,16 +205,16 @@ class ImageProc(threading.Thread):
 		# 					'low_value':      0, 'high_value':       255}
 
 		# tennisball in the morning
-		self.thresholds = {	'low_hue':			30, 'high_hue':			56,
-							'low_saturation':	28, 'high_saturation':	160,
-							'low_value':		84, 'high_value':		255	}
+		self.thresholds = {	'low_hue':			0,		'high_hue':			66,
+							'low_saturation':	0,		'high_saturation':	111,
+							'low_value':		221,	'high_value':		255	}
 
 
 	def run(self):
 		url = "http://"+self.IP_ADDRESS+":"+str(self.PORT)
 		stream = urllib.request.urlopen(url)
 		while(self.RUNNING):
-#			sleep(0.5)
+#			time.sleep(0.5)
 			bytes = b''
 			while self.RUNNING:
 				# Image size is about 40k bytes, so this loops about 5 times
@@ -254,12 +254,10 @@ class ImageProc(threading.Thread):
 			# after eroding the image you can see the update in feedback_filtered
 			with imageLock:
 				self.feedback_filtered = copy.deepcopy(img)
-				self.dilate_big(self.feedback_filtered, 2, 2)
 				self.erode(self.feedback_filtered, 2)
-
-			# Track Circles
-			with imageLock:
-				self.track_circles(self.feedback_filtered)
+				self.dilate_big(self.feedback_filtered, 2, 2)
+				cv2.GaussianBlur(self.feedback_filtered, (11, 11), 0)
+				self.blob_detection(self.feedback_filtered)
 
 
 
@@ -334,16 +332,37 @@ class ImageProc(threading.Thread):
 							for k in range(x - how_big, x + how_big):
 								imgToModify[j][k][i] = 255
 
-	def track_circles(self, imgToModify):
-		# CIRCLE TRACKING
-		gray = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2GRAY)
-		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
-		if circles is not None:
-			circles = np.round(circles[0, :]).astype("int")
-			for (x, y, r) in circles:
-				print("Circle at {0}, {1}, with radius {2}".format(x, y, r))
-				cv2.circle(imgToModify, (x, y), r, (0, 255, 0), 4)
-				cv2.rectangle(imgToModify, (x - 5, y - 5), (x + 5, y + 5), (0, 0, 255), -1)
+	# CIRCLE TRACKING
+#	def track_circles(self, imgToModify):
+#		gray = cv2.cvtColor(imgToModify, cv2.COLOR_BGR2GRAY)
+#		circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100)
+#		if circles is not None:
+#			circles = np.round(circles[0, :]).astype("int")
+#			for (x, y, r) in circles:
+#				print("Circle at {0}, {1}, with radius {2}".format(x, y, r))
+#				cv2.circle(imgToModify, (x, y), r, (0, 255, 0), 4)
+#				cv2.rectangle(imgToModify, (x - 5, y - 5), (x + 5, y + 5), (0, 0, 255), -1)
+#		else:
+#			print("CIRCLE IS NONE!!!")
+
+	# BLOB DETECTION
+	def blob_detection(self, imgToModify):
+		ret, blobs = cv2.threshold(imgToModify, 127, 255, 0)
+		blobs = cv2.findContours(imgToModify, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		blobs = imutils.grab_contours(blobs)
+		# only proceed if at least one contour was found
+		if (len(blobs) > 0):
+			# find the largest contour in the mask, then use
+			# it to compute the minimum enclosing circle and
+			# centroid
+			c = max(blobs, key=cv2.contourArea)
+			((x, y), radius) = cv2.minEnclosingCircle(c)
+			M = cv2.moments(c)
+			center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+			print("center = {0}".format(center))
+			cv2.circle(imgToModify, center, radius, (0, 255, 0), 4)
+
+
 
 	def doImgProc(self, imgToModify):
 #		pixel = self.latestImg[120,160]
@@ -439,7 +458,7 @@ if __name__ == "__main__":
 	cv2.createTrackbar('high_value',		'sliders', sm.video.thresholds['high_value'],		255, lambda x: sm.video.setThresh('high_value',			x))
 
 	while len(sm.video.latestImg) == 0:
-		sleep(1)
+		time.sleep(1)
 
 	while(sm.RUNNING):
 		with imageLock:
@@ -450,6 +469,6 @@ if __name__ == "__main__":
 
 	cv2.destroyAllWindows()
 
-	sleep(1)
+	time.sleep(1)
 
 #	sm.join()
